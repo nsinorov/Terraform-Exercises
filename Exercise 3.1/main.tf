@@ -43,9 +43,15 @@ resource "azurerm_linux_web_app" "alwa" {
 
   site_config {
     application_stack {
-      node_version = "20-lts"
+      dotnet_version = "8.0"
     }
     always_on = false
+  }
+
+  connection_string {
+    name  = "DefaultConnection"
+    type  = "SQLAzure"
+    value = "Data Source=tcp:${azurerm_mssql_server.sqlserver.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.database.name};User ID=${azurerm_mssql_server.sqlserver.administrator_login};Password=${azurerm_mssql_server.sqlserver.administrator_login_password};Trusted_Connection=False; MultipleActiveResultSets=True;"
   }
 }
 
@@ -57,26 +63,33 @@ resource "azurerm_app_service_source_control" "aassc" {
 }
 
 resource "azurerm_mssql_server" "sqlserver" {
-name                = "mssqlserver${random_integer.ri.result}"
-location            = azurerm_resource_group.arg.location
-resource_group_name = azurerm_resource_group.arg.name
-version             = "12.0"
-administrator_login = "sqladmin"
-administrator_login_password = "P@ssw0rd1234"
+  name                         = "mssqlserver${random_integer.ri.result}"
+  location                     = azurerm_resource_group.arg.location
+  resource_group_name          = azurerm_resource_group.arg.name
+  version                      = "12.0"
+  administrator_login          = "sqladmin"
+  administrator_login_password = "P@ssw0rd1234"
 }
 
 resource "azurerm_mssql_database" "database" {
-  name                = "taskboarddb"
-  server_id           = azurerm_mssql_server.sqlserver.id
-  collation           = "SQL_Latin1_General_CP1_CI_AS"
-  sku_name            = "S0"
-  license_type = "LicenseIncluded"
-  max_size_gb = 2
-  zone_redundant = false
-  storage_account_type = "local"
+  name                 = "eaxmple-db"
+  server_id            = azurerm_mssql_server.sqlserver.id
+  collation            = "SQL_Latin1_General_CP1_CI_AS"
+  sku_name             = "S0"
+  license_type         = "LicenseIncluded"
+  max_size_gb          = 2
+  zone_redundant       = false
+  storage_account_type = "Local"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
-  
+
+}
+
+resource "azurerm_mssql_firewall_rule" "firewallrule" {
+  name             = "FirewallRule11"
+  server_id        = azurerm_mssql_server.sqlserver.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
 }
